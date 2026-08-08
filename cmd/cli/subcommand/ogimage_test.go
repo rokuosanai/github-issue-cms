@@ -54,12 +54,23 @@ func TestOGCImageCommand_MissingFile(t *testing.T) {
 	assert.Error(t, err, "Should error when file is missing")
 }
 
+func TestOGCImageCommand_MissingTemplate(t *testing.T) {
+	cmd := NewOGCImageCommand()
+	cmd.SetArgs([]string{"--file", "article.md"})
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "required flag")
+	assert.Contains(t, err.Error(), "template")
+}
+
 func TestOGCImageCommand_Help(t *testing.T) {
 	cmd := NewOGCImageCommand()
 	cmd.SetArgs([]string{"--help"})
 
 	err := cmd.Execute()
 	assert.NoError(t, err)
+	assert.Contains(t, cmd.Long, "github-issue-cms ogimage -f content/posts/2024-01-15_103000.md -t ogimage/template.html")
 }
 
 func TestArticleToOGPData(t *testing.T) {
@@ -176,7 +187,8 @@ This is the article body.`
 	assert.Equal(t, "Integration Test", data.Title)
 
 	// Render using the ogimage package (requires Chromium).
-	renderer, err := ogimage.NewRenderer("")
+	templatePath := filepath.Join("..", "..", "..", "pkg", "ogimage", "testdata", "template.html")
+	renderer, err := ogimage.NewRendererWithTemplate(templatePath, "")
 	require.NoError(t, err)
 
 	jpeg, err := renderer.Render(t.Context(), data)

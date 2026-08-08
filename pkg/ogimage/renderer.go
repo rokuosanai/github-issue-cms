@@ -3,7 +3,6 @@ package ogimage
 import (
 	"bytes"
 	"context"
-	_ "embed"
 	"fmt"
 	"html/template"
 	"net/url"
@@ -17,32 +16,16 @@ import (
 	"github.com/go-rod/rod/lib/proto"
 )
 
-// DefaultTemplate is the embedded default OGP HTML template.
-//
-//go:embed template.html
-var DefaultTemplate string
-
 // Renderer is an OGP image renderer that uses a headless Chromium browser.
 // It loads an HTML template, expands it with OGPData, renders it in a headless
 // browser, and captures a JPEG screenshot at 1200×630.
 type Renderer struct {
 	tmpl       *template.Template
 	browserBin string
-	tmplDir    string // directory of custom template (empty for embedded)
+	tmplDir    string // directory used to resolve relative template assets
 }
 
-// NewRenderer creates a Renderer using the embedded default template.
-// If browserBin is empty, go-rod's launcher auto-downloads and caches Chromium.
-// The GIC_CHROMIUM_BIN environment variable takes precedence over browserBin.
-func NewRenderer(browserBin string) (*Renderer, error) {
-	tmpl, err := template.New("ogp").Parse(DefaultTemplate)
-	if err != nil {
-		return nil, fmt.Errorf("ogimage: parse default template: %w", err)
-	}
-	return &Renderer{tmpl: tmpl, browserBin: browserBin}, nil
-}
-
-// NewRendererWithTemplate creates a Renderer from a custom template file.
+// NewRendererWithTemplate creates a Renderer from a user-provided template file.
 // If browserBin is empty, go-rod's launcher auto-downloads and caches Chromium.
 // The template file's directory is preserved so relative asset references
 // (images, stylesheets) in the template resolve correctly.

@@ -74,6 +74,17 @@ $ tree --dirsfirst
 └── gic.config.yaml
 ```
 
+## OGP images
+
+The executable deliberately does not include a built-in OGP design. Copy [`pkg/ogimage/testdata/template.html`](pkg/ogimage/testdata/template.html) into your site repository, customize it, and supply it explicitly:
+
+```bash
+github-issue-cms ogimage --file content/posts/article.md \
+  --template ogimage/template.html
+```
+
+Until the feature is included in a numbered release, install the current development version with `go install github.com/rokuosan/github-issue-cms@main`.
+
 ### 4. (Optional) Auto commit with GitHub Actions
 
 GitHub Actions provides a built-in `GITHUB_TOKEN`, so you do not need to create a separate repository secret for this workflow.

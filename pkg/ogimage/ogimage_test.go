@@ -26,15 +26,15 @@ func TestOGPData(t *testing.T) {
 	assert.Equal(t, []string{"go", "testing"}, data.Tags)
 }
 
-func TestNewRenderer(t *testing.T) {
-	r, err := NewRenderer("")
+func TestNewRendererWithTemplate_ExampleTemplate(t *testing.T) {
+	r, err := NewRendererWithTemplate(sampleTemplatePath(t), "")
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	assert.NotNil(t, r.tmpl)
 }
 
-func TestNewRenderer_WithBin(t *testing.T) {
-	r, err := NewRenderer("/usr/bin/chromium-browser")
+func TestNewRendererWithTemplate_WithBin(t *testing.T) {
+	r, err := NewRendererWithTemplate(sampleTemplatePath(t), "/usr/bin/chromium-browser")
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	assert.Equal(t, "/usr/bin/chromium-browser", r.browserBin)
@@ -62,7 +62,7 @@ func TestNewRendererWithTemplate_NotFound(t *testing.T) {
 }
 
 func TestExecuteTemplate(t *testing.T) {
-	r, err := NewRenderer("")
+	r, err := NewRendererWithTemplate(sampleTemplatePath(t), "")
 	require.NoError(t, err)
 
 	data := OGPData{
@@ -86,7 +86,7 @@ func TestExecuteTemplate(t *testing.T) {
 }
 
 func TestExecuteTemplate_EmptyData(t *testing.T) {
-	r, err := NewRenderer("")
+	r, err := NewRendererWithTemplate(sampleTemplatePath(t), "")
 	require.NoError(t, err)
 
 	html, err := r.executeTemplate(OGPData{})
@@ -98,13 +98,13 @@ func TestExecuteTemplate_EmptyData(t *testing.T) {
 }
 
 func TestExecuteTemplate_SpecialChars(t *testing.T) {
-	r, err := NewRenderer("")
+	r, err := NewRendererWithTemplate(sampleTemplatePath(t), "")
 	require.NoError(t, err)
 
 	data := OGPData{
-		Title:    "Title with special chars & unicode: 日本語",
-		Author:   "user",
-		Tags:     []string{"tag-1", "tag-2"},
+		Title:  "Title with special chars & unicode: 日本語",
+		Author: "user",
+		Tags:   []string{"tag-1", "tag-2"},
 	}
 
 	html, err := r.executeTemplate(data)
@@ -125,11 +125,13 @@ func TestResolveChromiumBin(t *testing.T) {
 	})
 
 	t.Run("falls back to browserBin", func(t *testing.T) {
+		t.Setenv("GIC_CHROMIUM_BIN", "")
 		r := &Renderer{browserBin: "/usr/bin/chrome"}
 		assert.Equal(t, "/usr/bin/chrome", r.resolveChromiumBin())
 	})
 
 	t.Run("empty when neither is set", func(t *testing.T) {
+		t.Setenv("GIC_CHROMIUM_BIN", "")
 		r := &Renderer{}
 		assert.Equal(t, "", r.resolveChromiumBin())
 	})
@@ -141,11 +143,18 @@ func TestResolveChromiumBin(t *testing.T) {
 	})
 }
 
-func TestDefaultTemplate_Embedded(t *testing.T) {
-	assert.NotEmpty(t, DefaultTemplate)
-	assert.True(t, strings.Contains(DefaultTemplate, "<html"), "default template should be HTML")
-	assert.True(t, strings.Contains(DefaultTemplate, "{{ .Title }}"), "template should have Title placeholder")
-	assert.True(t, strings.Contains(DefaultTemplate, "{{ .Author }}"), "template should have Author placeholder")
+func sampleTemplatePath(t *testing.T) string {
+	t.Helper()
+	return filepath.Join("testdata", "template.html")
+}
+
+func TestExampleTemplate(t *testing.T) {
+	contents, err := os.ReadFile(sampleTemplatePath(t))
+
+	require.NoError(t, err)
+	assert.True(t, strings.Contains(string(contents), "<html"), "template should be HTML")
+	assert.True(t, strings.Contains(string(contents), "{{ .Title }}"), "template should have Title placeholder")
+	assert.True(t, strings.Contains(string(contents), "{{ .Author }}"), "template should have Author placeholder")
 }
 
 // TestRenderIntegration performs a full render with a real browser.
@@ -155,7 +164,7 @@ func TestRenderIntegration(t *testing.T) {
 		t.Skip("Skipping integration test: set GIC_INTEGRATION_TEST=1 to run")
 	}
 
-	r, err := NewRenderer("")
+	r, err := NewRendererWithTemplate(sampleTemplatePath(t), "")
 	require.NoError(t, err)
 
 	data := OGPData{
